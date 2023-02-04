@@ -2,60 +2,60 @@ use crate::env;
 use tokio::process;
 use tokio::io::{AsyncReadExt,AsyncWriteExt};
 use tokio::fs::File;
+use serde::{Serialize, Deserialize};
 //use std::process;
 pub struct Job{
+    //TODO:maybe refactor this into 1 struct with a name string, step struct and status enum and make a
+    //vec of that
+    names: Vec<String>,
     steps: Vec<JobStep>,
     status: Vec<JobStatus>,
 }
 impl Job{
     pub async fn execute_steps(&mut self){
-        for (step, status) in self.steps.iter_mut().zip(self.status.iter_mut()){
-            *status = JobStatus::Ongoing;
-            match step.run(){
-                Ok(child)=>{
-                    let (mut stdout, mut stderr) = (child.stdout.expect("stdout missing"), child.stderr.expect("stderr missing"));
-                    tokio::spawn(async move{
-                        let log_path = {
-                            let mut tmp = env::get_proc_path()
-                                .expect(format!("path error {}",line!()).as_str());
-                            tmp.push("stdout.log");
-                            tmp
-                        };
-                        let mut log = File::create(log_path).await.expect("fs error");
-                        let buf:&mut [u8] = &mut [0;1024];
-                        while let Ok(n) = stdout.read(buf).await{
-                            // would've preferred putting this in the while loop logic but oh well
-                            if n == 0{ break;}
-                            log.write(buf).await;
-                            log.flush().await;
-                        }
-                        
-                    });
-                    tokio::spawn(async move{
-                        let log_path = {
-                            let mut tmp = env::get_proc_path()
-                                .expect(format!("path error {}",line!()).as_str());
-                            tmp.push("stderr.log");
-                            tmp
-                        };
-                        let mut log = File::create(log_path).await.expect("fs error");
-                        let buf:&mut [u8] = &mut [0;1024];
-                        while let Ok(n) = stderr.read(buf).await{
-                            // would've preferred putting this in the while loop logic but oh well
-                            if n == 0{ break;}
-                            log.write(buf).await;
-                            log.flush().await;
-                        }
-
-                    });
+        // zip of a zip is kinda pain ngl
+        for ((i,step),name) in self.steps.iter()
+            .enumerate()
+            .zip(self.names.iter()){
+            
+            self.status[i] = JobStatus::Ongoing;
+            let out_path = {
+                let mut tmp = env::get_proc_path()
+                    .expect(format!("path error {}",line!()).as_str());
+                tmp.push(name);
+                tmp.push("stdout.log");
+                tmp
+            };
+            let err_path = {
+                let mut tmp = env::get_proc_path()
+                    .expect(format!("path error {}",line!()).as_str());
+                tmp.push(name);
+                tmp.push("stderr.log");
+                tmp
+            };
+            match step.run(std::fs::File::create(out_path).expect("fs error").into(),std::fs::File::create(err_path).expect("fs error").into()){
+                Ok(mut child)=>{
+                    child.wait().await;
+                    self.status[i] = JobStatus::Complete;
+                    self.status_update().await;
                 },
                 Err(e)=>{
+                    self.status[i] = JobStatus::Failed;
+                    self.status_update().await;
                     eprintln!("{}",e);
                     std::process::exit(1);
                 }
             }
             
         }
+    }
+    pub async fn status_update(&self)->Result<(),std::io::Error>{
+        let mut path = env::get_proc_path()?;
+        path.push("status.json");
+        let serial: Vec<(&String, &JobStatus)> = self.names.iter().zip(self.status.iter()).collect();
+        let mut file = File::create(path).await?;
+        file.write(serde_json::to_string(&serial)?.as_bytes());
+        Ok(())
     }
     pub fn get_status(&self)->Vec<JobStatus>{
         self.status.clone()
@@ -68,7 +68,7 @@ pub struct JobStep{
     env: std::collections::HashMap<String, String>
 }
 impl JobStep{
-    pub fn run(&mut self)->Result<process::Child,std::io::Error>{
+    pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio)->Result<process::Child,std::io::Error>{
         let repo_path = {
             let mut tmp =env::get_proc_path()?;
             tmp.push("repo");
@@ -80,7 +80,7 @@ impl JobStep{
             .args(["stderr","stdout"].into_iter()
                   .map(|stream|format!("-a {}",stream)))
             // add env args specified
-            .args(self.env.into_iter()
+            .args(self.env.iter()
                   .map(|(key,val)|format!("-e {}={}",key,val)))
             //TODO: change this so we read the ports to publish from config instead publishing of all of them
             .arg("-P")
@@ -92,12 +92,11 @@ impl JobStep{
             //set the working directory to where the repo got cloned
             .args(["-w", "/repo"])
             // pipe all stdio to us so we can log it
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .stdin(std::process::Stdio::piped())
+            .stdout(out)
+            .stderr(err)
 
             .spawn()
     }
 }
-#[derive(Clone)]
+#[derive(Clone,Serialize, Deserialize)]
 pub enum JobStatus{Pending, Ongoing, Complete, Failed}
