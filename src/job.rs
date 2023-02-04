@@ -7,17 +7,16 @@ use serde::{Serialize, Deserialize};
 pub struct Job{
     //TODO:maybe refactor this into 1 struct with a name string, step struct and status enum and make a
     //vec of that
-    names: Vec<String>,
+    name:String,
     steps: Vec<JobStep>,
     status: Vec<JobStatus>,
 }
 impl Job{
     pub async fn execute_steps(&mut self){
         // zip of a zip is kinda pain ngl
-        for ((i,step),name) in self.steps.iter()
-            .enumerate()
-            .zip(self.names.iter()){
-            
+        for (i,step) in self.steps.iter()
+            .enumerate(){
+            let name = &step.name;
             self.status[i] = JobStatus::Ongoing;
             let out_path = {
                 let mut tmp = env::get_proc_path()
@@ -35,13 +34,13 @@ impl Job{
             };
             match step.run(std::fs::File::create(out_path).expect("fs error").into(),std::fs::File::create(err_path).expect("fs error").into()){
                 Ok(mut child)=>{
-                    child.wait().await;
+                    child.wait().await.expect("child reaping failed");
                     self.status[i] = JobStatus::Complete;
-                    self.status_update().await;
+                    self.status_update().await.expect("status update failed");
                 },
                 Err(e)=>{
                     self.status[i] = JobStatus::Failed;
-                    self.status_update().await;
+                    self.status_update().await.expect("status update failed");
                     eprintln!("{}",e);
                     std::process::exit(1);
                 }
@@ -52,17 +51,19 @@ impl Job{
     pub async fn status_update(&self)->Result<(),std::io::Error>{
         let mut path = env::get_proc_path()?;
         path.push("status.json");
-        let serial: Vec<(&String, &JobStatus)> = self.names.iter().zip(self.status.iter()).collect();
+        let serial: Vec<(&String, &JobStatus)> = self.steps.iter().map(|s|&s.name).zip(self.status.iter()).collect();
         let mut file = File::create(path).await?;
-        file.write(serde_json::to_string(&serial)?.as_bytes());
+        file.write(serde_json::to_string(&serial)?.as_bytes()).await?;
         Ok(())
     }
     pub fn get_status(&self)->Vec<JobStatus>{
         self.status.clone()
     }
 }
-// expose all the ports fuck it
+
+#[derive(Serialize,Deserialize)]
 pub struct JobStep{
+    name:String,
     container:String,
     cmd: String,
     env: std::collections::HashMap<String, String>
@@ -100,3 +101,21 @@ impl JobStep{
 }
 #[derive(Clone,Serialize, Deserialize)]
 pub enum JobStatus{Pending, Ongoing, Complete, Failed}
+
+use crate::setup::JobFile;
+struct VJ(Vec<Job>);
+impl From<VJ> for Vec<Job> {
+    fn from(v:VJ)->Self{
+        v.0
+    }
+}
+impl From<JobFile> for VJ{
+    fn from(o:JobFile)->Self{
+        VJ(o.into_iter().map(|(k,v)|Job{
+            name:k,
+            steps:v.steps,
+            status:std::iter::repeat(JobStatus::Pending)
+                .take(v.steps.len()).collect()
+        }).collect())
+    }
+}
