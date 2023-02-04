@@ -1,6 +1,6 @@
 use crate::env;
 use tokio::process;
-use tokio::io::{AsyncReadExt,AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::fs::File;
 use serde::{Serialize, Deserialize};
 //use std::process;
@@ -84,7 +84,7 @@ impl JobStep{
             // mount the cloned repo into /repo in the container
             .args(["-v",format!("{}:{}",
                         repo_path.into_os_string().into_string()
-                            .map_err(|e|std::io::Error::new(std::io::ErrorKind::InvalidInput, "wrong"))?,
+                            .map_err(|_|std::io::Error::new(std::io::ErrorKind::InvalidInput, "wrong"))?,
                         "/repo").as_ref()])
             //set the working directory to where the repo got cloned
             .args(["-w", "/repo"])

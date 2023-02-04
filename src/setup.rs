@@ -12,7 +12,7 @@ pub struct PartialJob{
 }
 pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     let mut file:String = String::new();
-    tokio::fs::File::open(".rye_jobs.yaml").await?.read_to_string(&mut file).await;
+    tokio::fs::File::open(".rye_jobs.yaml").await?.read_to_string(&mut file).await?;
     // I don't trust serde libs to handle reader correctly
     let config = serde_yaml::from_str::<JobFile>(file.as_str()).expect("yaml parsing error");
     Ok(config.into_iter().map(|(k,v)|Job{
