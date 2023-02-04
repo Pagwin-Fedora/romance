@@ -1,14 +1,14 @@
-use std::path::Path;
+use std::path;
 
 
 /// Returns the path to the folder that is being used as a hub for various files that the program
 /// temporarily needs
-pub fn get_hub_path<'a>()-> &'a std::path::Path {
-    Path::new(concat!("/tmp/",std::env!("CARGO_PKG_NAME")))
+fn get_hub_path<'a>()-> &'a path::Path {
+    path::Path::new(concat!("/tmp/",std::env!("CARGO_PKG_NAME")))
 }
 
 /// Returns the name of the dir of the bare repo for usage as an id in the hub
-pub fn get_id()->Result<String,std::io::Error>{
+fn get_id()->Result<String,std::io::Error>{
     let mut pwd = std::env::current_dir()?;
     pwd.pop();
     pwd.file_name()
@@ -16,4 +16,10 @@ pub fn get_id()->Result<String,std::io::Error>{
         .map(std::ffi::OsStr::to_os_string)
         .map(std::ffi::OsString::into_string)
         .map(Result::unwrap)
+}
+
+pub fn get_proc_path()->Result<path::PathBuf, std::io::Error>{
+    let mut hub = get_hub_path().to_path_buf();
+    hub.push(get_id()?);
+    Ok(hub)
 }
