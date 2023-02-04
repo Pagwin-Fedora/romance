@@ -7,7 +7,7 @@ use std::process;
 pub type JobFile = HashMap<String, PartialJob>;
 
 #[derive(Serialize, Deserialize)]
-struct PartialJob{
+pub struct PartialJob{
    pub steps:Vec<JobStep>
 }
 pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{

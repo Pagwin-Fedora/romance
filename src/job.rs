@@ -7,9 +7,9 @@ use serde::{Serialize, Deserialize};
 pub struct Job{
     //TODO:maybe refactor this into 1 struct with a name string, step struct and status enum and make a
     //vec of that
-    name:String,
-    steps: Vec<JobStep>,
-    status: Vec<JobStatus>,
+    pub name:String,
+    pub steps: Vec<JobStep>,
+    pub status: Vec<JobStatus>,
 }
 impl Job{
     pub async fn execute_steps(&mut self){
@@ -109,9 +109,9 @@ impl From<JobFile> for VJ{
     fn from(o:JobFile)->Self{
         VJ(o.into_iter().map(|(k,v)|Job{
             name:k,
-            steps:v.steps,
             status:std::iter::repeat(JobStatus::Pending)
-                .take(v.steps.len()).collect()
+                .take(v.steps.len()).collect(),
+            steps:v.steps,
         }).collect())
     }
 }
