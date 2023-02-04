@@ -70,11 +70,7 @@ pub struct JobStep{
 }
 impl JobStep{
     pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio)->Result<process::Child,std::io::Error>{
-        let repo_path = {
-            let mut tmp =env::get_proc_path()?;
-            tmp.push("repo");
-            tmp
-        };
+        let repo_path = env::get_repo_path()?;
         process::Command::new("docker")
             .arg("run")
             // attach stdout and  stderr for logs
