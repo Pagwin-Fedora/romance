@@ -15,7 +15,7 @@ pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     let mut file:String = String::new();
     let path = {
         let mut tmp = get_repo_path()?;
-        tmp.push(".rye_jobs.yaml");
+        tmp.push(".romance_jobs.yaml");
         tmp
     };
     tokio::fs::File::open(path).await?.read_to_string(&mut file).await?;
