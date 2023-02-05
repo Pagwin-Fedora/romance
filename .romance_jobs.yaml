@@ -8,4 +8,4 @@ true_love:
       container: busybox
       cmd: echo $HELLO
       env:
-        HELLO: World!
+        HELLO: World
