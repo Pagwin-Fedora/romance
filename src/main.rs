@@ -9,9 +9,10 @@ mod job;
 mod env;
 mod setup;
 
-#[tokio::main]
+#[tokio::main( flavor = "current_thread")]
 async fn main() -> Result<(),std::io::Error> {
     setup::setup_dirs()?;
+    setup::reset_repo()?;
     let jobs = setup::collect_jobs().await?;
     for mut job in jobs{
         setup::reset_repo()?;

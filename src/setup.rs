@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::job::{JobStep,Job,JobStatus};
 use tokio::io::AsyncReadExt;
 use std::process;
+use crate::env::get_repo_path;
 
 pub type JobFile = HashMap<String, PartialJob>;
 
@@ -12,7 +13,12 @@ pub struct PartialJob{
 }
 pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     let mut file:String = String::new();
-    tokio::fs::File::open(".rye_jobs.yaml").await?.read_to_string(&mut file).await?;
+    let path = {
+        let mut tmp = get_repo_path()?;
+        tmp.push(".rye_jobs.yaml");
+        tmp
+    };
+    tokio::fs::File::open(path).await?.read_to_string(&mut file).await?;
     // I don't trust serde libs to handle reader correctly
     let config = serde_yaml::from_str::<JobFile>(file.as_str()).expect("yaml parsing error");
     Ok(config.into_iter().map(|(k,v)|Job{
@@ -23,13 +29,16 @@ pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     }).collect())
 }
 
-use crate::env::get_repo_path;
 pub fn reset_repo()->Result<(),std::io::Error>{
     std::fs::remove_dir_all(get_repo_path()?)?;
     process::Command::new("git")
         .arg("clone")
         .arg(std::env::current_dir()?)
-        .arg(get_repo_path()?);
+        .arg(get_repo_path()?)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()?.wait()?;
     Ok(())
 }
 pub fn setup_dirs()->std::io::Result<()>{
@@ -39,5 +48,6 @@ pub fn setup_dirs()->std::io::Result<()>{
     b.recursive(true);
     b.create(env::get_repo_path()?)?;
     b.create(env::get_proc_path()?)?;
+
     Ok(())
 }

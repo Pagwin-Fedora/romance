@@ -32,7 +32,9 @@ impl Job{
                 tmp.push("stderr.log");
                 tmp
             };
-            match step.run(std::fs::File::create(out_path).expect("fs error").into(),std::fs::File::create(err_path).expect("fs error").into()){
+            match step.run(
+                std::fs::File::create(out_path).expect("fs error").into(),
+                std::fs::File::create(err_path).expect("fs error").into()){
                 Ok(mut child)=>{
                     child.wait().await.expect("child reaping failed");
                     self.status[i] = JobStatus::Complete;
@@ -88,6 +90,8 @@ impl JobStep{
                         "/repo").as_ref()])
             //set the working directory to where the repo got cloned
             .args(["-w", "/repo"])
+            //TODO: change this to not use sh
+            .args(["sh", "-c", self.cmd.as_ref()])
             // pipe all stdio to us so we can log it
             .stdout(out)
             .stderr(err)
