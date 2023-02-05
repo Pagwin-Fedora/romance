@@ -39,9 +39,18 @@ impl Job{
                 std::fs::File::create(err_path).expect("fs error").into(),
                 &self.name){
                 Ok(mut child)=>{
-                    child.wait().await.expect("child reaping failed");
-                    self.status[i] = JobStatus::Complete;
+                    let status = child.wait().await.expect("child reaping failed");
+                    
+                    self.status[i] = if status.success(){
+                        JobStatus::Complete
+                    }else{
+                        JobStatus::Failed
+                    };
                     self.status_update().await.expect("status update failed");
+                    match self.status[i]{
+                        JobStatus::Failed=>std::process::exit(1),
+                        _=>{}
+                    }
                 },
                 Err(e)=>{
                     self.status[i] = JobStatus::Failed;
