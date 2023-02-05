@@ -22,6 +22,7 @@ impl Job{
                 let mut tmp = env::get_proc_path()
                     .expect(format!("path error {}",line!()).as_str());
                 tmp.push(name);
+                std::fs::create_dir_all(&tmp).expect("failed to create log directory");
                 tmp.push("stdout.log");
                 tmp
             };
@@ -76,11 +77,10 @@ impl JobStep{
         process::Command::new("docker")
             .arg("run")
             // attach stdout and  stderr for logs
-            .args(["stderr","stdout"].into_iter()
-                  .map(|stream|format!("-a {}",stream)))
+            .args(["-a", "STDERR", "-a", "STDOUT"])
             // add env args specified
             .args(self.env.iter()
-                  .map(|(key,val)|format!("-e {}={}",key,val)))
+                  .map(|(key,val)|format!("-e{}={}",key,val)))
             //TODO: change this so we read the ports to publish from config instead publishing of all of them
             .arg("-P")
             // mount the cloned repo into /repo in the container
@@ -90,6 +90,7 @@ impl JobStep{
                         "/repo").as_ref()])
             //set the working directory to where the repo got cloned
             .args(["-w", "/repo"])
+            .arg(&self.container)
             //TODO: change this to not use sh
             .args(["sh", "-c", self.cmd.as_ref()])
             // pipe all stdio to us so we can log it
