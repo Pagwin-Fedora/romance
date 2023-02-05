@@ -112,7 +112,6 @@ impl JobStep{
             // pipe all stdio to us so we can log it
             .stdout(out)
             .stderr(err);
-        println!("{:?}",cmd);
         cmd.spawn()
     }
 }
