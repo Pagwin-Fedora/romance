@@ -29,13 +29,17 @@ pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     }).collect())
 }
 
-/// FIX THIS!!
+/// TODO: have this take a repo argument after refactoring a lot
 pub fn reset_repo()->Result<(),std::io::Error>{
+    let path = {
+        let tmp = get_repo_path()?;
+        tmp
+    };
     std::fs::remove_dir_all(get_repo_path()?)?;
     process::Command::new("git")
         .arg("clone")
         .arg(std::env::current_dir()?)
-        .arg(get_repo_path()?)
+        .arg(path)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())

@@ -1,14 +1,10 @@
 true_love:
   steps:
-    - name: repo?
-      container: busybox
-      cmd: pwd && ls && ls -a
-      env:
     - name: build
       container: rust:buster
       cmd: cargo build --release
       env: 
-    - name: env_check
+    - name: env_test
       container: busybox
       cmd: echo $HELLO
       env:

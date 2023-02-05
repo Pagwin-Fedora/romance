@@ -83,8 +83,12 @@ pub struct JobStep{
     env: std::collections::HashMap<String, String>
 }
 impl JobStep{
-    pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio, job_name:&str)->Result<process::Child,std::io::Error>{
-        let repo_path = {let mut tmp = env::get_repo_path()?; tmp.push(job_name); tmp};
+    //TODO use job_name before refactoring to doing multiple jobs at once
+    pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio, _job_name:&str)->Result<process::Child,std::io::Error>{
+        let repo_path = {
+            let tmp = env::get_repo_path()?;
+            //tmp.push(job_name);
+            tmp};
         let mut cmd = process::Command::new("docker");
         cmd
             .arg("run")
