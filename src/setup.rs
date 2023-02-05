@@ -32,3 +32,12 @@ pub fn reset_repo()->Result<(),std::io::Error>{
         .arg(get_repo_path()?);
     Ok(())
 }
+pub fn setup_dirs()->std::io::Result<()>{
+    use std::fs;
+    use crate::env;
+    let mut b = fs::DirBuilder::new();
+    b.recursive(true);
+    b.create(env::get_repo_path()?)?;
+    b.create(env::get_proc_path()?)?;
+    Ok(())
+}

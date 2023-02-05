@@ -11,6 +11,7 @@ mod setup;
 
 #[tokio::main]
 async fn main() -> Result<(),std::io::Error> {
+    setup::setup_dirs()?;
     let jobs = setup::collect_jobs().await?;
     for mut job in jobs{
         setup::reset_repo()?;
