@@ -35,7 +35,8 @@ impl Job{
             };
             match step.run(
                 std::fs::File::create(out_path).expect("fs error").into(),
-                std::fs::File::create(err_path).expect("fs error").into()){
+                std::fs::File::create(err_path).expect("fs error").into(),
+                &self.name){
                 Ok(mut child)=>{
                     child.wait().await.expect("child reaping failed");
                     self.status[i] = JobStatus::Complete;
@@ -72,8 +73,8 @@ pub struct JobStep{
     env: std::collections::HashMap<String, String>
 }
 impl JobStep{
-    pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio)->Result<process::Child,std::io::Error>{
-        let repo_path = env::get_repo_path()?;
+    pub fn run(&self, out:std::process::Stdio, err:std::process::Stdio, job_name:&str)->Result<process::Child,std::io::Error>{
+        let repo_path = {let mut tmp = env::get_repo_path()?; tmp.push(job_name); tmp};
         process::Command::new("docker")
             .arg("run")
             // attach stdout and  stderr for logs
