@@ -18,6 +18,7 @@ impl Job{
             .enumerate(){
             let name = &step.name;
             self.status[i] = JobStatus::Ongoing;
+            self.status_update().await.expect("update failed");
             let out_path = {
                 let mut tmp = env::get_proc_path()
                     .expect(format!("path error {}",line!()).as_str());
