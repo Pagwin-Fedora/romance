@@ -2,7 +2,7 @@ true_love:
   steps:
     - name: repo?
       container: busybox
-      cmd: ls
+      cmd: pwd && ls && ls --all
       env:
     - name: build
       container: rust:buster
