@@ -1,0 +1,11 @@
+true_love:
+  steps:
+    - name: build
+      container: rust:buster
+      cmd: cargo build --release
+      env: 
+    - name: env_check
+      container: busybox
+      cmd: echo $HELLO
+      env:
+        HELLO: World!
