@@ -1,5 +1,9 @@
 true_love:
   steps:
+    - name: repo?
+      container: busybox
+      cmd: ls
+      env:
     - name: build
       container: rust:buster
       cmd: cargo build --release
