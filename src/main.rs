@@ -19,9 +19,11 @@ async fn main() -> Result<(),std::io::Error> {
     setup::setup_dirs()?;
     setup::reset_repo()?;
     let jobs = setup::collect_jobs().await?;
+    for job in jobs.iter(){
+        job.status_update().await?;
+    }
     for mut job in jobs{
         setup::reset_repo()?;
-        job.status_update().await?;
         job.execute_steps().await;
     }
     Ok(())
