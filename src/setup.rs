@@ -29,6 +29,7 @@ pub async fn collect_jobs()->Result<Vec<Job>,std::io::Error>{
     }).collect())
 }
 
+/// FIX THIS!!
 pub fn reset_repo()->Result<(),std::io::Error>{
     std::fs::remove_dir_all(get_repo_path()?)?;
     process::Command::new("git")

@@ -14,4 +14,16 @@ NOTE: please don't use this in prod I made it in less than 24 hours for a hackat
 
 ## Using
 
-To run CI jobs via Romance after putting the executable in place you add a .romance\_jobs.yml file to the repo
+To run CI jobs via Romance after putting the executable in place you add a .romance\_jobs.yml file to the repo. Example below
+```yml
+job1:
+  steps:
+    - name: job1 step 1
+      container: busybox
+      cmd: ls -a
+      env:
+    - name: job1 step 2
+      container: busybox
+      cmd: ls -a
+      env:
+```
