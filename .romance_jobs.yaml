@@ -4,8 +4,7 @@ true_love:
       container: rust:buster
       cmd: cargo build --release
       env: 
-    - name: env_test
+    - name: make cleanable
       container: busybox
-      cmd: echo $HELLO
+      cmd: chmod -R 777 /repo/target
       env:
-        HELLO: World
